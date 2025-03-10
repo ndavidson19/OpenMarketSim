@@ -1,0 +1,499 @@
+apiVersion: sim.financial.io/v1
+kind: FinancialSimulation
+metadata:
+  name: market-liquidity-study
+  namespace: market-sims
+spec:
+  name: "Market Liquidity Study"
+  description: "Simulation to analyze market maker behavior during liquidity stress events"
+  version: "1.0.0"
+  tags:
+    environment: "research"
+    team: "quant-strategies"
+    purpose: "liquidity-analysis"
+  
+  cluster:
+    enabled: true
+    namespace: "market-sims"
+    serviceAccountName: "simulation-account"
+    minNodes: 3
+    maxNodes: 5
+    nodeImage: "financial-sim:v1.2.3"
+    resources:
+      requestsCpu: "2"
+      requestsMemory: "4Gi"
+      limitsCpu: "4"
+      limitsMemory: "8Gi"
+    networkConfig:
+      enableVirtualNetwork: true
+      latencies:
+        "us-east:us-west": "80ms"
+        "us-east:eu-west": "100ms"
+        "us-west:eu-west": "140ms"
+      failureRate: 0.001
+      jitterFactor: 0.2
+    persistentStorage: true
+    storageClass: "standard"
+    storageSize: "20Gi"
+  
+  simulationParams:
+    startTime: "2023-01-15T09:30:00Z"
+    duration: "4h"
+    timeScale: 1.0
+    randomSeed: 42
+    clockSyncInterval: "5s"
+    marketHours:
+      enabled: true
+      openTime: "09:30:00"
+      closeTime: "16:00:00"
+      timeZone: "America/New_York"
+      preMarket: false
+      afterHours: false
+    checkpointInterval: "30m"
+    checkpointPath: "/data/checkpoints"
+    maxEvents: 1000000
+    marketConditions:
+      volatilityLevel: "high"
+      liquidityLevel: "low"
+      sentimentBias: -0.2
+      correlationFactor: 0.7
+      circuitBreakers: true
+      marketStress: 0.8
+  
+  exchanges:
+    - id: "nyse"
+      name: "New York Stock Exchange"
+      type: "equity"
+      location: "us-east"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN"]
+      tickSize: 0.01
+      tradingFees:
+        makerFee: -0.0002
+        takerFee: 0.0007
+        minFee: 0.01
+      marketMakerRebates: true
+      latencyModel:
+        baseLatencyMs: 1
+        jitterMs: 1
+        locationLatencies:
+          "us-east": 1
+          "us-west": 80
+          "eu-west": 100
+        congestionFactor: 1.5
+        congestionModel: "exponential"
+      matchingEngine:
+        type: "price-time"
+        processingTimeNs: 500000
+        batchProcessing: false
+      orderTypes: ["market", "limit", "stop", "stop_limit"]
+    
+    - id: "nasdaq"
+      name: "NASDAQ"
+      type: "equity"
+      location: "us-west"
+      instruments: ["TSLA", "META", "NFLX", "INTC"]
+      tickSize: 0.01
+      tradingFees:
+        makerFee: -0.0001
+        takerFee: 0.0005
+        minFee: 0.01
+      marketMakerRebates: true
+      latencyModel:
+        baseLatencyMs: 1
+        jitterMs: 1
+      matchingEngine:
+        type: "price-time"
+        processingTimeNs: 300000
+      orderTypes: ["market", "limit"]
+  
+  instruments:
+    - id: "AAPL"
+      symbol: "AAPL"
+      name: "Apple Inc."
+      type: "stock"
+      initialPrice: 150.0
+      currency: "USD"
+      exchanges: ["nyse"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 2400000000000.0
+      sector: "Technology"
+      industry: "Consumer Electronics"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.3
+        driftFactor: 0.0
+        jumpIntensity: 0.1
+        jumpSizeMean: 0.0
+        jumpSizeStdDev: 0.02
+      correlations:
+        "MSFT": 0.8
+        "GOOGL": 0.75
+        "META": 0.6
+    
+    - id: "MSFT"
+      symbol: "MSFT"
+      name: "Microsoft Corporation"
+      type: "stock"
+      initialPrice: 250.0
+      currency: "USD"
+      exchanges: ["nyse"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 1800000000000.0
+      sector: "Technology"
+      industry: "Software"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.25
+        driftFactor: 0.0
+        jumpIntensity: 0.1
+        jumpSizeMean: 0.0
+        jumpSizeStdDev: 0.018
+    
+    - id: "GOOGL"
+      symbol: "GOOGL"
+      name: "Alphabet Inc."
+      type: "stock"
+      initialPrice: 2200.0
+      currency: "USD"
+      exchanges: ["nyse"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 1500000000000.0
+      sector: "Technology"
+      industry: "Internet Services"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.28
+        driftFactor: 0.0
+        jumpIntensity: 0.1
+      correlations:
+        "MSFT": 0.82
+        "AAPL": 0.75
+    
+    - id: "AMZN"
+      symbol: "AMZN"
+      name: "Amazon.com, Inc."
+      type: "stock"
+      initialPrice: 3200.0
+      currency: "USD"
+      exchanges: ["nyse"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 1600000000000.0
+      sector: "Technology"
+      industry: "E-Commerce"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.35
+        driftFactor: 0.0
+        jumpIntensity: 0.12
+    
+    - id: "TSLA"
+      symbol: "TSLA"
+      name: "Tesla, Inc."
+      type: "stock"
+      initialPrice: 190.0
+      currency: "USD"
+      exchanges: ["nasdaq"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 600000000000.0
+      sector: "Automotive"
+      industry: "Electric Vehicles"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.6
+        driftFactor: 0.0
+        jumpIntensity: 0.2
+        jumpSizeMean: 0.0
+        jumpSizeStdDev: 0.03
+    
+    - id: "META"
+      symbol: "META"
+      name: "Meta Platforms, Inc."
+      type: "stock"
+      initialPrice: 170.0
+      currency: "USD"
+      exchanges: ["nasdaq"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 450000000000.0
+      sector: "Technology"
+      industry: "Social Media"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.4
+        driftFactor: 0.0
+        jumpIntensity: 0.15
+    
+    - id: "NFLX"
+      symbol: "NFLX"
+      name: "Netflix, Inc."
+      type: "stock"
+      initialPrice: 320.0
+      currency: "USD"
+      exchanges: ["nasdaq"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 142000000000.0
+      sector: "Technology"
+      industry: "Streaming"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.45
+        driftFactor: 0.0
+        jumpIntensity: 0.18
+    
+    - id: "INTC"
+      symbol: "INTC"
+      name: "Intel Corporation"
+      type: "stock"
+      initialPrice: 48.0
+      currency: "USD"
+      exchanges: ["nasdaq"]
+      minTickSize: 0.01
+      lotSize: 1.0
+      marketCap: 200000000000.0
+      sector: "Technology"
+      industry: "Semiconductors"
+      priceDynamics:
+        model: "jump-diffusion"
+        volatility: 0.3
+        driftFactor: 0.0
+        jumpIntensity: 0.08
+  
+  actors:
+    - id: "mm_normal"
+      type: "market_maker"
+      count: 5
+      initialCapital: 1000000.0
+      location: "us-east"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN"]
+      marketMakerParams:
+        targetSpreadBps: 5.0
+        maxPosition: 1000.0
+        orderSizePercent: 0.05
+        quoteRefreshMs: 100
+        inventorySkew: true
+        skewFactor: 0.2
+        layeringStrategy: "geometric"
+        maxLayers: 5
+      behavioralParams:
+        randomSeed: 1234
+        strategicBias: 0.0
+        noiseLevel: 0.1
+        adaptationRate: 0.5
+    
+    - id: "mm_aggressive"
+      type: "market_maker"
+      count: 3
+      initialCapital: 2000000.0
+      location: "us-east"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN"]
+      marketMakerParams:
+        targetSpreadBps: 3.0
+        maxPosition: 2000.0
+        orderSizePercent: 0.08
+        quoteRefreshMs: 50
+        inventorySkew: true
+        skewFactor: 0.3
+        layeringStrategy: "uniform"
+        maxLayers: 3
+      behavioralParams:
+        randomSeed: 2345
+        strategicBias: 0.1
+        noiseLevel: 0.15
+        adaptationRate: 0.7
+    
+    - id: "mm_passive"
+      type: "market_maker"
+      count: 2
+      initialCapital: 1500000.0
+      location: "us-west"
+      instruments: ["TSLA", "META", "NFLX", "INTC"]
+      marketMakerParams:
+        targetSpreadBps: 8.0
+        maxPosition: 800.0
+        orderSizePercent: 0.04
+        quoteRefreshMs: 200
+        inventorySkew: true
+        skewFactor: 0.1
+        layeringStrategy: "geometric"
+        maxLayers: 8
+      behavioralParams:
+        randomSeed: 3456
+        strategicBias: -0.1
+        noiseLevel: 0.05
+        adaptationRate: 0.3
+    
+    - id: "hft_arbitrage"
+      type: "hft"
+      count: 3
+      initialCapital: 5000000.0
+      location: "us-east"
+      instruments: ["AAPL", "MSFT", "TSLA", "META"]
+      hftParams:
+        minEdge: 0.0001
+        reactionTimeNs: 500000
+        colocation: true
+        maxOrdersPerSec: 1000
+        cancelRate: 0.9
+        strategies: ["statistical_arbitrage", "market_making", "momentum"]
+      behavioralParams:
+        randomSeed: 5678
+        noiseLevel: 0.05
+        adaptationRate: 0.8
+    
+    - id: "hft_momentum"
+      type: "hft"
+      count: 2
+      initialCapital: 3000000.0
+      location: "us-west"
+      instruments: ["TSLA", "META", "NFLX"]
+      hftParams:
+        minEdge: 0.0002
+        reactionTimeNs: 800000
+        colocation: true
+        maxOrdersPerSec: 800
+        cancelRate: 0.85
+        strategies: ["momentum", "orderbook_imbalance"]
+      behavioralParams:
+        randomSeed: 6789
+        noiseLevel: 0.08
+        adaptationRate: 0.7
+    
+    - id: "trend_follower"
+      type: "trend_follower"
+      count: 10
+      initialCapital: 2000000.0
+      location: "us-west"
+      instruments: ["AAPL", "MSFT", "TSLA", "META", "NFLX", "INTC"]
+      trendFollowerParams:
+        shortWindow: 10
+        longWindow: 30
+        positionSizePercent: 0.1
+        entryThreshold: 0.2
+        exitThreshold: 0.1
+        stopLossPct: 5.0
+        takeProfitPct: 10.0
+      behavioralParams:
+        randomSeed: 9012
+        strategicBias: 0.2
+        noiseLevel: 0.2
+        adaptationRate: 0.3
+    
+    - id: "retail_traders"
+      type: "retail"
+      count: 1000
+      initialCapital: 10000.0
+      location: "global"
+      instruments: ["AAPL", "MSFT", "TSLA", "META", "NFLX"]
+      retailParams:
+        riskAversion: 0.6
+        fomoSusceptibility: 0.7
+        lossAversion: 2.5
+        newsResponseFactor: 0.8
+        tradingFrequency: "medium"
+        orderSizeDistribution: "lognormal(7.0, 1.5)"
+      behavioralParams:
+        randomSeed: 3456
+        strategicBias: 0.1
+        noiseLevel: 0.4
+        adaptationRate: 0.2
+  
+  dataSources:
+    - id: "historical_daily"
+      type: "historical"
+      provider: "csv"
+      connectionString: "data/historical/daily"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NFLX", "INTC"]
+      startDate: "2022-01-01"
+      endDate: "2022-12-31"
+      bufferSize: 10000
+    
+    - id: "news_feed"
+      type: "realtime"
+      provider: "financial_news_api"
+      connectionString: "https://api.financialnews.com/v1"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META"]
+      parameters:
+        apiKey: "${NEWS_API_KEY}"
+        maxNewsPerMinute: "10"
+        sentimentAnalysis: "true"
+  
+  marketEvents:
+    - id: "earnings_aapl"
+      type: "earnings"
+      scheduleType: "fixed"
+      scheduleTime: "2023-01-15T16:30:00Z"
+      instruments: ["AAPL"]
+      impactMagnitude: 0.03
+      impactPermanence: 0.8
+      volatilityImpact: 1.5
+      description: "Apple Q1 2023 Earnings Report"
+    
+    - id: "earnings_msft"
+      type: "earnings"
+      scheduleType: "fixed"
+      scheduleTime: "2023-01-15T17:00:00Z"
+      instruments: ["MSFT"]
+      impactMagnitude: 0.025
+      impactPermanence: 0.75
+      volatilityImpact: 1.4
+      description: "Microsoft Q1 2023 Earnings Report"
+    
+    - id: "fed_rate_decision"
+      type: "monetary_policy"
+      scheduleType: "fixed"
+      scheduleTime: "2023-01-15T14:00:00Z"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META"]
+      affectedSectors: ["Technology", "Automotive", "Retail"]
+      impactMagnitude: 0.02
+      impactPermanence: 0.9
+      volatilityImpact: 1.2
+      description: "Federal Reserve Rate Decision"
+    
+    - id: "liquidity_shock"
+      type: "liquidity_event"
+      scheduleType: "fixed"
+      scheduleTime: "2023-01-15T11:30:00Z"
+      instruments: ["AAPL", "MSFT", "GOOGL", "AMZN"]
+      impactMagnitude: -0.15
+      impactPermanence: 0.6
+      volatilityImpact: 3.0
+      description: "Sudden liquidity withdrawal by major market participants"
+    
+    - id: "merger_announcement"
+      type: "company_news"
+      scheduleType: "fixed"
+      scheduleTime: "2023-01-15T13:45:00Z"
+      instruments: ["INTC"]
+      impactMagnitude: 0.08
+      impactPermanence: 0.95
+      volatilityImpact: 2.0
+      description: "Merger announcement"
+  
+  outputConfig:
+    logLevel: "info"
+    dataCollectionRate: "500ms"
+    outputFormat: "parquet"
+    outputPath: "/data/output"
+    metrics:
+      - "orderbook_depth"
+      - "price"
+      - "volume"
+      - "spread"
+      - "trade_count"
+      - "midprice_volatility"
+      - "orderflow_imbalance"
+      - "latency"
+      - "actor_pnl"
+      - "liquidity_provision"
+    snapshotInterval: "1m"
+    compressOutput: true
+    retentionPolicy: "7d"
+    enableTraceLogging: true
+    enableMetricsServer: true
+    metricsPort: 9090

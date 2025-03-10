@@ -1,0 +1,85 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }} and is installed in the namespace {{ .Values.global.namespace | default .Release.Namespace }}.
+
+To check the status of the operator deployment:
+  kubectl get deployment {{ include "financial-sim.fullname" . }}-operator -n {{ .Values.global.namespace | default .Release.Namespace }}
+
+To check the operator logs:
+  kubectl logs deployment/{{ include "financial-sim.fullname" . }}-operator -n {{ .Values.global.namespace | default .Release.Namespace }}
+
+{{- if .Values.defaultSimulation.enabled }}
+A default simulation named "{{ .Values.defaultSimulation.name }}" has been created.
+
+To check its status:
+  kubectl get financialsimulation {{ .Values.defaultSimulation.name }} -n {{ .Values.global.namespace | default .Release.Namespace }}
+
+To get more details:
+  kubectl describe financialsimulation {{ .Values.defaultSimulation.name }} -n {{ .Values.global.namespace | default .Release.Namespace }}
+{{- else }}
+To create a new simulation, apply a FinancialSimulation custom resource:
+
+  cat <<EOF | kubectl apply -f -
+  apiVersion: sim.financial.io/v1
+  kind: FinancialSimulation
+  metadata:
+    name: my-simulation
+    namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  spec:
+    name: "My Financial Market Simulation"
+    description: "A simple simulation example"
+    cluster:
+      enabled: true
+      minNodes: 1
+      nodeImage: "{{ .Values.node.image }}:{{ .Values.global.imageTag | default .Chart.AppVersion }}"
+    simulationParams:
+      duration: "1h"
+    exchanges:
+      - id: "exchange1"
+        name: "Primary Exchange"
+        type: "equity"
+    instruments:
+      - id: "SMPL"
+        symbol: "SMPL"
+        initialPrice: 100.0
+    actors:
+      - id: "mm1"
+        type: "market_maker"
+        count: 1
+        initialCapital: 1000000.0
+    outputConfig:
+      outputFormat: "csv"
+      metrics: ["price", "volume"]
+  EOF
+{{- end }}
+
+To monitor your simulations:
+{{- if contains "ClusterIP" .Values.operator.service.type }}
+  kubectl port-forward service/{{ include "financial-sim.fullname" . }}-operator {{ .Values.operator.service.port }}:{{ .Values.operator.service.port }} -n {{ .Values.global.namespace | default .Release.Namespace }}
+  Then access metrics at http://localhost:{{ .Values.operator.service.port }}/metrics
+{{- else if contains "NodePort" .Values.operator.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Values.global.namespace | default .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "financial-sim.fullname" . }}-operator)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Values.global.namespace | default .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT/metrics
+{{- else if contains "LoadBalancer" .Values.operator.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  You can watch the status by running: 
+  kubectl get --namespace {{ .Values.global.namespace | default .Release.Namespace }} svc -w {{ include "financial-sim.fullname" . }}-operator
+  
+  Once available, the metrics will be available at:
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Values.global.namespace | default .Release.Namespace }} {{ include "financial-sim.fullname" . }}-operator --template "{{ "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}" }}")
+  echo http://$SERVICE_IP:{{ .Values.operator.service.port }}/metrics
+{{- else if contains "Ingress" .Values.operator.service.type }}
+  Metrics should be available at:
+  {{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/metrics
+  {{- end }}
+{{- end }}
+
+For more information on using the financial simulation system, please refer to the documentation:
+https://github.com/yourusername/financial-sim/blob/main/docs/index.md
+
+To access simulation data, use the following command:
+  kubectl exec -it <simulation-pod-name> -n {{ .Values.global.namespace | default .Release.Namespace }} -- /bin/bash
+  # Then within the pod:
+  ls -la /data/output/

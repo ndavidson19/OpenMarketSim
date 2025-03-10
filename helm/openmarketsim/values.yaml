@@ -1,0 +1,179 @@
+x# Default values for financial-sim chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  # Namespace where the simulation resources will be created
+  namespace: market-sims
+  # Image pull secret name, if needed
+  imagePullSecrets: []
+  # Tag to use for all components
+  imageTag: latest
+
+# Operator settings
+operator:
+  # Image to use for the operator
+  image: financial-sim-operator
+  # Replica count for the operator
+  replicas: 1
+  # Resource limits for the operator
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # Optional nodeSelector for operator pod
+  nodeSelector: {}
+  # Optional tolerations for operator pod
+  tolerations: []
+  # Optional affinity settings for operator pod
+  affinity: {}
+  # Service configuration for the operator
+  service:
+    type: ClusterIP
+    port: 8080
+  # Metrics configuration
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# Node settings (for simulation instances)
+node:
+  # Image to use for the simulation nodes
+  image: financial-sim
+  # Default resource limits for simulation nodes
+  # (can be overridden in the FinancialSimulation CR)
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  # Default persistent storage settings
+  storage:
+    enabled: true
+    storageClass: standard
+    size: 10Gi
+
+# RBAC settings
+rbac:
+  # Create ClusterRole/Role and ServiceAccount
+  create: true
+  # Use existing ServiceAccount
+  serviceAccountName: financial-sim-operator
+
+# CRD settings
+crd:
+  # Install the CRD
+  install: true
+  # Cleanup the CRD on uninstall
+  cleanup: false
+
+# Default simulation parameters
+# These can be overridden in the FinancialSimulation CR
+defaultSimulation:
+  enabled: false
+  name: default-simulation
+  description: "Default financial market simulation"
+  cluster:
+    minNodes: 1
+    maxNodes: 3
+  simulationParams:
+    duration: "1h"
+    timeScale: 1.0
+    marketHours:
+      enabled: true
+      openTime: "09:30:00"
+      closeTime: "16:00:00"
+      timeZone: "America/New_York"
+  exchanges:
+    - id: "default-exchange"
+      name: "Default Exchange"
+      type: "equity"
+  instruments:
+    - id: "SMPL"
+      symbol: "SMPL"
+      initialPrice: 100.0
+  actors:
+    - id: "market-maker"
+      type: "market_maker"
+      count: 1
+      initialCapital: 1000000.0
+  outputConfig:
+    outputFormat: "csv"
+    metrics:
+      - "price"
+      - "volume"
+
+# Network policy settings
+networkPolicy:
+  enabled: false
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: financial-sim.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Monitoring configuration
+monitoring:
+  # Prometheus integration
+  prometheus:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+  # Grafana dashboard integration
+  grafana:
+    enabled: false
+    dashboards:
+      - name: financial-sim-dashboard
+        json: |
+          {}  # Dashboard JSON will be filled in here
+
+# ZeroMQ settings
+zeromq:
+  # Configure ZeroMQ parameters
+  hwm: 1000
+  tcpKeepalive: true
+  tcpKeepaliveIdle: 60
+  tcpKeepaliveInterval: 30
+
+# Logging settings
+logging:
+  level: info
+  format: json
+
+# Security settings
+security:
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+  # Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+# Node image cache settings
+# Used to retain simulation node Docker images on cluster nodes
+imageCache:
+  enabled: false
+  daemonset:
+    enabled: false

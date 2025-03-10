@@ -1,0 +1,25 @@
+apiVersion: v2
+name: financial-sim
+description: A Helm chart for deploying a distributed financial market simulation system on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - simulation
+  - finance
+  - trading
+  - market
+home: https://github.com/yourusername/financial-sim
+sources:
+  - https://github.com/yourusername/financial-sim
+maintainers:
+  - name: Nicholas Davidson
+    email: ndavidson19@g.ucla.edu
+icon: https://raw.githubusercontent.com/yourusername/financial-sim/main/docs/icon.png
+dependencies:
+  - name: common
+    version: ~1.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: common.enabled
+    tags:
+      - bitnami-common

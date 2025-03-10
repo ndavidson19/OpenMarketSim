@@ -1,0 +1,518 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: financialsimulations.sim.financial.io
+  labels:
+    {{- include "financial-sim.labels" . | nindent 4 }}
+spec:
+  group: sim.financial.io
+  names:
+    kind: FinancialSimulation
+    listKind: FinancialSimulationList
+    plural: financialsimulations
+    singular: financialsimulation
+    shortNames:
+      - fsim
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "Name of the simulation"
+                description:
+                  type: string
+                  description: "Description of the simulation"
+                version:
+                  type: string
+                  description: "Version of the simulation configuration"
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: "Tags for the simulation"
+                
+                cluster:
+                  type: object
+                  description: "Kubernetes cluster configuration"
+                  properties:
+                    enabled:
+                      type: boolean
+                      description: "Whether to use Kubernetes deployment"
+                    namespace:
+                      type: string
+                      description: "Kubernetes namespace"
+                    serviceAccountName:
+                      type: string
+                      description: "Name of the service account to use"
+                    minNodes:
+                      type: integer
+                      description: "Minimum number of simulation nodes"
+                    maxNodes:
+                      type: integer
+                      description: "Maximum number of simulation nodes"
+                    nodeImage:
+                      type: string
+                      description: "Container image for simulation nodes"
+                    resources:
+                      type: object
+                      description: "Resource requests and limits"
+                      properties:
+                        requestsCpu:
+                          type: string
+                          description: "CPU requests"
+                        requestsMemory:
+                          type: string
+                          description: "Memory requests"
+                        limitsCpu:
+                          type: string
+                          description: "CPU limits"
+                        limitsMemory:
+                          type: string
+                          description: "Memory limits"
+                    networkConfig:
+                      type: object
+                      description: "Network configuration"
+                      properties:
+                        enableVirtualNetwork:
+                          type: boolean
+                          description: "Enable virtual network simulation"
+                        topologyFile:
+                          type: string
+                          description: "Path to network topology file"
+                        latencies:
+                          type: object
+                          additionalProperties:
+                            type: string
+                          description: "Network latencies between locations"
+                        failureRate:
+                          type: number
+                          description: "Network failure rate"
+                        jitterFactor:
+                          type: number
+                          description: "Network jitter factor"
+                    persistentStorage:
+                      type: boolean
+                      description: "Enable persistent storage"
+                    storageClass:
+                      type: string
+                      description: "Storage class for persistent volumes"
+                    storageSize:
+                      type: string
+                      description: "Size of persistent volumes"
+                
+                simulationParams:
+                  type: object
+                  description: "Simulation parameters"
+                  properties:
+                    startTime:
+                      type: string
+                      format: date-time
+                      description: "Simulation start time"
+                    duration:
+                      type: string
+                      description: "Simulation duration (e.g., '1h', '2d')"
+                    timeScale:
+                      type: number
+                      description: "Simulation time scale factor"
+                    randomSeed:
+                      type: integer
+                      description: "Random seed for reproducibility"
+                    clockSyncInterval:
+                      type: string
+                      description: "Clock synchronization interval"
+                    marketHours:
+                      type: object
+                      description: "Market trading hours"
+                      properties:
+                        enabled:
+                          type: boolean
+                          description: "Enable market hours"
+                        openTime:
+                          type: string
+                          description: "Market open time (e.g., '09:30:00')"
+                        closeTime:
+                          type: string
+                          description: "Market close time (e.g., '16:00:00')"
+                        timeZone:
+                          type: string
+                          description: "Time zone for market hours"
+                        preMarket:
+                          type: boolean
+                          description: "Enable pre-market trading"
+                        afterHours:
+                          type: boolean
+                          description: "Enable after-hours trading"
+                    checkpointInterval:
+                      type: string
+                      description: "Checkpoint interval"
+                    checkpointPath:
+                      type: string
+                      description: "Path for checkpoint files"
+                    maxEvents:
+                      type: integer
+                      description: "Maximum number of events"
+                    marketConditions:
+                      type: object
+                      description: "Market condition parameters"
+                      properties:
+                        volatilityLevel:
+                          type: string
+                          description: "Market volatility level"
+                        liquidityLevel:
+                          type: string
+                          description: "Market liquidity level"
+                        sentimentBias:
+                          type: number
+                          description: "Market sentiment bias"
+                        correlationFactor:
+                          type: number
+                          description: "Asset correlation factor"
+                        circuitBreakers:
+                          type: boolean
+                          description: "Enable circuit breakers"
+                        marketStress:
+                          type: number
+                          description: "Market stress factor"
+                
+                exchanges:
+                  type: array
+                  description: "Exchanges to simulate"
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Exchange ID"
+                      name:
+                        type: string
+                        description: "Exchange name"
+                      type:
+                        type: string
+                        description: "Exchange type"
+                      location:
+                        type: string
+                        description: "Exchange location"
+                      instruments:
+                        type: array
+                        items:
+                          type: string
+                        description: "Instruments traded on this exchange"
+                      tickSize:
+                        type: number
+                        description: "Minimum tick size"
+                      tradingFees:
+                        type: object
+                        description: "Trading fee structure"
+                        properties:
+                          makerFee:
+                            type: number
+                            description: "Fee for market makers"
+                          takerFee:
+                            type: number
+                            description: "Fee for liquidity takers"
+                          minFee:
+                            type: number
+                            description: "Minimum fee"
+                          maxFee:
+                            type: number
+                            description: "Maximum fee"
+                          discountLevels:
+                            type: array
+                            items:
+                              type: number
+                            description: "Fee discount levels"
+                      marketMakerRebates:
+                        type: boolean
+                        description: "Enable market maker rebates"
+                      latencyModel:
+                        type: object
+                        description: "Exchange latency model"
+                        properties:
+                          baseLatencyMs:
+                            type: integer
+                            description: "Base latency in milliseconds"
+                          jitterMs:
+                            type: integer
+                            description: "Jitter in milliseconds"
+                          locationLatencies:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                            description: "Location-specific latencies"
+                          congestionFactor:
+                            type: number
+                            description: "Congestion factor"
+                          congestionModel:
+                            type: string
+                            description: "Congestion model type"
+                      matchingEngine:
+                        type: object
+                        description: "Matching engine configuration"
+                        properties:
+                          type:
+                            type: string
+                            description: "Matching engine type"
+                          processingTimeNs:
+                            type: integer
+                            description: "Processing time in nanoseconds"
+                          batchProcessing:
+                            type: boolean
+                            description: "Enable batch processing"
+                          batchIntervalMs:
+                            type: integer
+                            description: "Batch interval in milliseconds"
+                          marketOrderBuffer:
+                            type: integer
+                            description: "Market order buffer size"
+                      orderTypes:
+                        type: array
+                        items:
+                          type: string
+                        description: "Supported order types"
+                
+                instruments:
+                  type: array
+                  description: "Instruments to simulate"
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Instrument ID"
+                      symbol:
+                        type: string
+                        description: "Trading symbol"
+                      name:
+                        type: string
+                        description: "Instrument name"
+                      type:
+                        type: string
+                        description: "Instrument type"
+                      initialPrice:
+                        type: number
+                        description: "Initial price"
+                      currency:
+                        type: string
+                        description: "Currency"
+                      exchanges:
+                        type: array
+                        items:
+                          type: string
+                        description: "Exchanges where this instrument is traded"
+                      minTickSize:
+                        type: number
+                        description: "Minimum tick size"
+                      lotSize:
+                        type: number
+                        description: "Lot size"
+                      marketCap:
+                        type: number
+                        description: "Market capitalization"
+                      sector:
+                        type: string
+                        description: "Industry sector"
+                      industry:
+                        type: string
+                        description: "Industry"
+                      priceDynamics:
+                        type: object
+                        description: "Price dynamics model"
+                        properties:
+                          model:
+                            type: string
+                            description: "Price model type"
+                          volatility:
+                            type: number
+                            description: "Volatility"
+                          driftFactor:
+                            type: number
+                            description: "Drift factor"
+                          meanReversion:
+                            type: number
+                            description: "Mean reversion factor"
+                          jumpIntensity:
+                            type: number
+                            description: "Jump intensity"
+                          jumpSizeMean:
+                            type: number
+                            description: "Mean jump size"
+                          jumpSizeStdDev:
+                            type: number
+                            description: "Jump size standard deviation"
+                      correlations:
+                        type: object
+                        additionalProperties:
+                          type: number
+                        description: "Correlations with other instruments"
+                
+                actors:
+                  type: array
+                  description: "Market participants"
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Actor ID"
+                      type:
+                        type: string
+                        description: "Actor type"
+                      count:
+                        type: integer
+                        description: "Number of this actor type"
+                      initialCapital:
+                        type: number
+                        description: "Initial capital"
+                      location:
+                        type: string
+                        description: "Actor location"
+                      instruments:
+                        type: array
+                        items:
+                          type: string
+                        description: "Instruments to trade"
+                      marketMakerParams:
+                        type: object
+                        description: "Market maker parameters"
+                      trendFollowerParams:
+                        type: object
+                        description: "Trend follower parameters"
+                      hftParams:
+                        type: object
+                        description: "High-frequency trader parameters"
+                      retailParams:
+                        type: object
+                        description: "Retail trader parameters"
+                      behavioralParams:
+                        type: object
+                        description: "Behavioral parameters"
+                
+                dataSources:
+                  type: array
+                  description: "External data sources"
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Data source ID"
+                      type:
+                        type: string
+                        description: "Data source type"
+                      provider:
+                        type: string
+                        description: "Data provider"
+                      connectionString:
+                        type: string
+                        description: "Connection string"
+                      instruments:
+                        type: array
+                        items:
+                          type: string
+                        description: "Instruments for this data source"
+                
+                marketEvents:
+                  type: array
+                  description: "Market events"
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Event ID"
+                      type:
+                        type: string
+                        description: "Event type"
+                      scheduleType:
+                        type: string
+                        description: "Scheduling type"
+                      scheduleTime:
+                        type: string
+                        description: "Scheduled time"
+                      instruments:
+                        type: array
+                        items:
+                          type: string
+                        description: "Affected instruments"
+                
+                outputConfig:
+                  type: object
+                  description: "Output configuration"
+                  properties:
+                    logLevel:
+                      type: string
+                      description: "Log level"
+                    dataCollectionRate:
+                      type: string
+                      description: "Data collection rate"
+                    outputFormat:
+                      type: string
+                      description: "Output format"
+                    outputPath:
+                      type: string
+                      description: "Output path"
+                    metrics:
+                      type: array
+                      items:
+                        type: string
+                      description: "Metrics to collect"
+            
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: "Current phase of the simulation"
+                startTime:
+                  type: string
+                  format: date-time
+                  description: "Time when the simulation started"
+                completionTime:
+                  type: string
+                  format: date-time
+                  description: "Time when the simulation completed"
+                nodesRunning:
+                  type: integer
+                  description: "Number of simulation nodes currently running"
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: "Condition type"
+                      status:
+                        type: string
+                        description: "Condition status"
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                        description: "Last transition time"
+                      reason:
+                        type: string
+                        description: "Reason for the condition"
+                      message:
+                        type: string
+                        description: "Human-readable message"
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Nodes
+          type: integer
+          jsonPath: .status.nodesRunning
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}

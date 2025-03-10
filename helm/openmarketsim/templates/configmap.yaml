@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "financial-sim.fullname" . }}-config
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "financial-sim.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    # Operator configuration
+    operator:
+      # Global settings
+      metricsPort: 8080
+      leaderElection: false
+      
+      # ZeroMQ settings
+      zeromq:
+        hwm: {{ .Values.zeromq.hwm }}
+        tcpKeepalive: {{ .Values.zeromq.tcpKeepalive }}
+        tcpKeepaliveIdle: {{ .Values.zeromq.tcpKeepaliveIdle }}
+        tcpKeepaliveInterval: {{ .Values.zeromq.tcpKeepaliveInterval }}
+      
+      # Node settings
+      node:
+        image: "{{ .Values.node.image }}:{{ .Values.global.imageTag | default .Chart.AppVersion }}"
+        defaultResources:
+          requests:
+            cpu: {{ .Values.node.resources.requests.cpu }}
+            memory: {{ .Values.node.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.node.resources.limits.cpu }}
+            memory: {{ .Values.node.resources.limits.memory }}
+        storage:
+          enabled: {{ .Values.node.storage.enabled }}
+          storageClass: {{ .Values.node.storage.storageClass }}
+          size: {{ .Values.node.storage.size }}
+      
+      # Logging settings
+      logging:
+        level: {{ .Values.logging.level }}
+        format: {{ .Values.logging.format }}
+        
+      # Default simulation parameters
+      simulationDefaults:
+        timeScale: 1.0
+        randomSeed: 42
+        clockSyncInterval: "5s"
+        marketHours:
+          enabled: true
+          openTime: "09:30:00"
+          closeTime: "16:00:00"
+          timeZone: "America/New_York"
+        outputConfig:
+          outputFormat: "csv"
+          metrics: ["price", "volume", "spread"]

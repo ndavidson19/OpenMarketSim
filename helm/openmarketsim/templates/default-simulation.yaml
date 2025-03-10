@@ -1,0 +1,68 @@
+{{- if .Values.defaultSimulation.enabled -}}
+apiVersion: sim.financial.io/v1
+kind: FinancialSimulation
+metadata:
+  name: {{ .Values.defaultSimulation.name }}
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "financial-sim.labels" . | nindent 4 }}
+spec:
+  name: {{ .Values.defaultSimulation.name }}
+  description: {{ .Values.defaultSimulation.description }}
+  version: {{ .Chart.AppVersion }}
+  
+  cluster:
+    enabled: true
+    namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+    serviceAccountName: {{ include "financial-sim.serviceAccountName" . }}
+    minNodes: {{ .Values.defaultSimulation.cluster.minNodes }}
+    maxNodes: {{ .Values.defaultSimulation.cluster.maxNodes }}
+    nodeImage: "{{ .Values.node.image }}:{{ .Values.global.imageTag | default .Chart.AppVersion }}"
+    resources:
+      requestsCpu: {{ .Values.node.resources.requests.cpu }}
+      requestsMemory: {{ .Values.node.resources.requests.memory }}
+      limitsCpu: {{ .Values.node.resources.limits.cpu }}
+      limitsMemory: {{ .Values.node.resources.limits.memory }}
+    persistentStorage: {{ .Values.node.storage.enabled }}
+    storageClass: {{ .Values.node.storage.storageClass }}
+    storageSize: {{ .Values.node.storage.size }}
+  
+  simulationParams:
+    duration: {{ .Values.defaultSimulation.simulationParams.duration }}
+    timeScale: {{ .Values.defaultSimulation.simulationParams.timeScale }}
+    randomSeed: 42
+    marketHours:
+      enabled: {{ .Values.defaultSimulation.simulationParams.marketHours.enabled }}
+      openTime: {{ .Values.defaultSimulation.simulationParams.marketHours.openTime }}
+      closeTime: {{ .Values.defaultSimulation.simulationParams.marketHours.closeTime }}
+      timeZone: {{ .Values.defaultSimulation.simulationParams.marketHours.timeZone }}
+  
+  exchanges:
+  {{- range .Values.defaultSimulation.exchanges }}
+    - id: {{ .id }}
+      name: {{ .name }}
+      type: {{ .type }}
+  {{- end }}
+  
+  instruments:
+  {{- range .Values.defaultSimulation.instruments }}
+    - id: {{ .id }}
+      symbol: {{ .symbol }}
+      initialPrice: {{ .initialPrice }}
+  {{- end }}
+  
+  actors:
+  {{- range .Values.defaultSimulation.actors }}
+    - id: {{ .id }}
+      type: {{ .type }}
+      count: {{ .count }}
+      initialCapital: {{ .initialCapital }}
+  {{- end }}
+  
+  outputConfig:
+    outputFormat: {{ .Values.defaultSimulation.outputConfig.outputFormat }}
+    metrics:
+    {{- range .Values.defaultSimulation.outputConfig.metrics }}
+      - {{ . }}
+    {{- end }}
+{{- end }}
