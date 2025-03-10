@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package sim.grpc;
+
+option go_package = "github.com/yourusername/financial-sim/proto";
+
+service SimulationService {
+  // Initialize the simulation
+  rpc Initialize(InitializeRequest) returns (InitializeResponse) {}
+  
+  // Create a new exchange
+  rpc CreateExchange(CreateExchangeRequest) returns (CreateExchangeResponse) {}
+  
+  // Add an instrument to an exchange
+  rpc AddInstrument(AddInstrumentRequest) returns (AddInstrumentResponse) {}
+  
+  // Register an actor in the simulation
+  rpc RegisterActor(RegisterActorRequest) returns (RegisterActorResponse) {}
+  
+  // Execute an order
+  rpc ExecuteOrder(OrderRequest) returns (OrderResponse) {}
+  
+  // Cancel an order
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {}
+  
+  // Run the simulation for a specified duration
+  rpc RunSimulation(RunSimulationRequest) returns (RunSimulationResponse) {}
+  
+  // Get the current simulation state
+  rpc GetSimulationState(GetStateRequest) returns (SimulationState) {}
+}
+
+// Initialize
+
+message InitializeRequest {
+  map<string, string> config = 1;
+}
+
+message InitializeResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Exchange
+
+message LatencyModel {
+  int64 base_latency_ns = 1;
+  int64 jitter_ns = 2;
+  double congestion_factor = 3;
+}
+
+message FeeModel {
+  double maker_rate = 1;
+  double taker_rate = 2;
+  double min_fee = 3;
+}
+
+message CreateExchangeRequest {
+  string exchange_id = 1;
+  LatencyModel latency_model = 2;
+  FeeModel fee_model = 3;
+}
+
+message CreateExchangeResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Instrument
+
+message AddInstrumentRequest {
+  string exchange_id = 1;
+  string instrument_id = 2;
+  double initial_price = 3;
+}
+
+message AddInstrumentResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Actor
+
+message RegisterActorRequest {
+  string actor_id = 1;
+  string actor_type = 2;
+  double initial_capital = 3;
+  repeated string instruments = 4;
+  map<string, string> params = 5;
+}
+
+message RegisterActorResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Orders
+
+message OrderRequest {
+  string actor_id = 1;
+  string exchange_id = 2;
+  string order_id = 3;
+  string instrument_id = 4;
+  string type = 5;  // "MARKET", "LIMIT", etc.
+  string side = 6;  // "BUY", "SELL"
+  double quantity = 7;
+  double price = 8;
+}
+
+message OrderResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CancelOrderRequest {
+  string actor_id = 1;
+  string exchange_id = 2;
+  string order_id = 3;
+}
+
+message CancelOrderResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Simulation Control
+
+message RunSimulationRequest {
+  int64 duration_ns = 1;
+}
+
+message RunSimulationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// State Queries
+
+message GetStateRequest {
+  repeated string instruments = 1;
+  repeated string actors = 2;
+}
+
+message PriceLevel {
+  double price = 1;
+  double volume = 2;
+}
+
+message InstrumentState {
+  string instrument_id = 1;
+  double best_bid = 2;
+  double best_ask = 3;
+  double mid_price = 4;
+  repeated PriceLevel bid_levels = 5;
+  repeated PriceLevel ask_levels = 6;
+  double last_price = 7;
+  double last_volume = 8;
+}
+
+message PositionState {
+  string instrument_id = 1;
+  double quantity = 2;
+  double avg_price = 3;
+  double realized_pnl = 4;
+  double unrealized_pnl = 5;
+}
+
+message ActorState {
+  string actor_id = 1;
+  double capital = 2;
+  repeated PositionState positions = 3;
+}
+
+message ExchangeState {
+  string exchange_id = 1;
+  bool trading_open = 2;
+  repeated InstrumentState instruments = 3;
+}
+
+message SimulationState {
+  int64 current_time_ns = 1;
+  bool running = 2;
+  repeated ExchangeState exchanges = 3;
+  repeated ActorState actors = 4;
+}
