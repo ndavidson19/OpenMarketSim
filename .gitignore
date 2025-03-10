@@ -1,0 +1,18 @@
+.DS_Store
+*.swp
+*.swo
+*.pyc
+
+# C++
+*.o
+*.a
+*.exe
+*.dll
+
+# Go 
+*.exe
+*.out
+*.test
+
+
+
